@@ -115,12 +115,11 @@ generateLexer {
 generateParser {
     def pkg = 'me/serce/solidity'
     sourceFile = new File("$project.projectDir/src/main/grammars/solidity.bnf")
-    targetRoot = 'gen'
+    targetRoot = "gen"
     pathToParser = "$pkg/SolidityParser.java"
     pathToPsiRoot = "$pkg/psi"
     purgeOldFiles = true
-
-    outputs.dir(new File("$targetRoot/$pkg"))
+    outputs.dir(new File("gen/$pkg"))
 }
 
 

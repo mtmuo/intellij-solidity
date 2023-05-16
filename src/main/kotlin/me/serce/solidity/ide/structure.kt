@@ -19,8 +19,9 @@ class SolPsiStructureViewFactory : PsiStructureViewFactory {
   }
 }
 
-class SolStructureViewModel(editor: Editor?, file: SolidityFile) : TextEditorBasedStructureViewModel(editor, file),
-  StructureViewModel.ElementInfoProvider {
+
+
+class SolStructureViewModel(editor: Editor?, file: SolidityFile) : TextEditorBasedStructureViewModel(editor, file), StructureViewModel.ElementInfoProvider {
 
   override fun getRoot() = SolTreeElement(psiFile)
 
@@ -36,6 +37,7 @@ class SolStructureViewModel(editor: Editor?, file: SolidityFile) : TextEditorBas
   }
 }
 
+
 class SolTreeElement(item: SolElement) : PsiTreeElementBase<SolElement>(item) {
   override fun getPresentableText() = element?.toString() // TODO: name
 
@@ -47,6 +49,7 @@ class SolTreeElement(item: SolElement) : PsiTreeElementBase<SolElement>(item) {
   }
 }
 
+
 class SolContractTreeElement(item: SolContractDefinition) : PsiTreeElementBase<SolContractDefinition>(item) {
   override fun getPresentableText() = element?.name
   override fun getChildrenBase(): Collection<StructureViewTreeElement> = element?.let {
@@ -57,8 +60,8 @@ class SolContractTreeElement(item: SolContractDefinition) : PsiTreeElementBase<S
   } ?: emptyList()
 }
 
+
 class SolLeafTreeElement(item: SolNamedElement) : PsiTreeElementBase<SolNamedElement>(item) {
   override fun getPresentableText() = element?.name
   override fun getChildrenBase(): Collection<StructureViewTreeElement> = emptyList()
 }
-
