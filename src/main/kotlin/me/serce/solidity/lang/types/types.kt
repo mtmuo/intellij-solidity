@@ -34,9 +34,14 @@ interface SolMember {
 
 interface SolType {
   fun isAssignableFrom(other: SolType): Boolean
+  fun signText(): String {
+    return this.toString()
+  }
+
   fun getMembers(project: Project): List<SolMember> {
     return emptyList()
   }
+
   val isBuiltin: Boolean
     get() = true
 }
@@ -162,6 +167,7 @@ data class SolInteger(val unsigned: Boolean, val size: Int) : SolNumeric {
           this.size >= other.size
         }
       }
+
       else -> false
     }
 
@@ -199,6 +205,7 @@ data class SolContract(val ref: SolContractDefinition, val builtin: Boolean = fa
         other.ref == ref
           || other.ref.collectSupers.flatMap { SolResolver.resolveTypeNameUsingImports(it) }.contains(ref)
       }
+
       else -> false
     }
 
@@ -206,12 +213,16 @@ data class SolContract(val ref: SolContractDefinition, val builtin: Boolean = fa
     return SolResolver.resolveContractMembers(ref, false)
   }
 
+  override fun signText(): String {
+    return "address"
+  }
+
   override val isBuiltin get() = builtin
 
   override fun toString() = ref.name ?: ref.text ?: "$ref"
 }
 
-data class SolStruct(val ref: SolStructDefinition, val builtin : Boolean = false) : SolUserType {
+data class SolStruct(val ref: SolStructDefinition, val builtin: Boolean = false) : SolUserType {
   override fun isAssignableFrom(other: SolType): Boolean =
     other is SolStruct && ref == other.ref
 
@@ -224,6 +235,10 @@ data class SolStruct(val ref: SolStructDefinition, val builtin : Boolean = false
 
   override val isBuiltin: Boolean
     get() = builtin
+
+  override fun signText(): String {
+    return ref.variableDeclarationList.map { getSolType(it.typeName).signText() }.joinToString(",","(",")")
+  }
 }
 
 data class SolStructVariableDeclaration(
@@ -246,6 +261,10 @@ data class SolEnum(val ref: SolEnumDefinition) : SolUserType {
 
   override fun getMembers(project: Project): List<SolMember> {
     return ref.enumValueList
+  }
+
+  override fun signText(): String {
+    return "uint8"
   }
 }
 
@@ -313,8 +332,8 @@ sealed class SolArray(val type: SolType) : SolType {
 
     override fun getMembers(project: Project): List<SolMember> {
       return SolInternalTypeFactory.of(project).arrayType.ref.let {
-             it.functionDefinitionList + it.stateVariableDeclarationList
-           }
+        it.functionDefinitionList + it.stateVariableDeclarationList
+      }
     }
   }
 }
@@ -326,7 +345,7 @@ object SolBytes : SolPrimitiveType {
   override fun toString() = "bytes"
 }
 
-data class SolFixedBytes(val size: Int): SolPrimitiveType {
+data class SolFixedBytes(val size: Int) : SolPrimitiveType {
   override fun toString() = "bytes$size"
 
   override fun isAssignableFrom(other: SolType): Boolean =
@@ -372,6 +391,7 @@ data class BuiltinCallable(
 ) : SolCallable, SolMember {
   override val callablePriority: Int
     get() = 1000
+
   override fun parseParameters(): List<Pair<String?, SolType>> = parameters
   override fun parseType(): SolType = returnType
   override fun resolveElement(): SolNamedElement? = resolvedElement
@@ -380,5 +400,5 @@ data class BuiltinCallable(
 }
 
 private fun getSdkMembers(solContract: SolContract): List<SolMember> {
-    return solContract.ref.let { it.functionDefinitionList + it.stateVariableDeclarationList }
+  return solContract.ref.let { it.functionDefinitionList + it.stateVariableDeclarationList }
 }

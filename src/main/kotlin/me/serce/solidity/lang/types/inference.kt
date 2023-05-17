@@ -39,7 +39,9 @@ fun getSolType(type: SolTypeName?): SolType {
     }
     is SolUserDefinedLocationTypeName ->
       type.userDefinedTypeName?.let { getSolTypeFromUserDefinedTypeName(it) } ?: SolUnknown
+
     is SolUserDefinedTypeName -> getSolTypeFromUserDefinedTypeName(type)
+
     is SolMappingTypeName -> when {
       type.typeNameList.size >= 2 -> SolMapping(
         getSolType(type.typeNameList[0]),
@@ -59,6 +61,7 @@ fun getSolType(type: SolTypeName?): SolType {
     else -> SolUnknown
   }
 }
+
 
 private fun getSolTypeFromUserDefinedTypeName(type: SolUserDefinedTypeName): SolType {
   val name = type.name

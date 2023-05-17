@@ -18,17 +18,18 @@ import me.serce.solidity.ide.colors.SolColor
 import me.serce.solidity.lang.core.SolidityTokenTypes
 import me.serce.solidity.lang.psi.*
 import me.serce.solidity.lang.psi.impl.SolErrorDefMixin
+import me.serce.solidity.lang.psi.impl.SolParameterDefImpl
 import me.serce.solidity.lang.psi.parentOfType
 import me.serce.solidity.lang.resolve.SolResolver
 import me.serce.solidity.lang.resolve.function.SolFunctionResolver
-import me.serce.solidity.lang.types.getSolType
+import me.serce.solidity.lang.types.*
+import org.web3j.crypto.Hash
 
 const val NO_VALIDATION_TAG = "@custom:no_validation"
 
 fun PsiElement.comments(): List<PsiElement> {
   return CachedValuesManager.getCachedValue(this) {
-    val nonSolElements = siblings(false, false)
-      .takeWhile { it !is SolElement }.toList()
+    val nonSolElements = siblings(false, false).takeWhile { it !is SolElement }.toList()
     val isBuiltin = this.containingFile.virtualFile == null
     val res = (if (!isBuiltin) PsiDocumentManager.getInstance(project).getDocument(this.containingFile)?.let { document ->
       val tripleLines = nonSolElements.filter { it.text.startsWith("///") }.map { document.getLineNumber(it.textOffset) }.toSet()
@@ -61,9 +62,7 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     return builder.toString()
   }
 
-  private val keywordColors = SolHighlighter.keywords().plus(SolHighlighter.types()).minus(SolidityTokenTypes.RETURN).map { it.toString() }
-    .plus(setOf("u?int(\\d+)", "u?fixed(\\d+)", "bytes?(\\d+)", "error"))
-    .joinToString("|", "\\b(", ")\\b").toRegex()
+  private val keywordColors = SolHighlighter.keywords().plus(SolHighlighter.types()).minus(SolidityTokenTypes.RETURN).map { it.toString() }.plus(setOf("u?int(\\d+)", "u?fixed(\\d+)", "bytes?(\\d+)", "error")).joinToString("|", "\\b(", ")\\b").toRegex()
 
 
   private val col = SolColor.TYPE.textAttributesKey.defaultAttributes.foregroundColor
@@ -73,7 +72,8 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
   private fun String.colorizeKeywords(): String {
     return this.replace(keywordColors) { it.value.colorizeKeyword() }
   }
-  private fun String.colorizeKeyword()  = "<b style='color:$typeRGB'>${this}</b>"
+
+  private fun String.colorizeKeyword() = "<b style='color:$typeRGB'>${this}</b>"
 
   private val commentsRegex = "^/\\*\\*|\\*/$|^///".toRegex()
 
@@ -81,11 +81,18 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     var element = elementOrNull ?: return null
 
     if (element is SolMemberAccessExpression) {
-      element = SolResolver.resolveMemberAccess(element).filterIsInstance<SolFunctionDefinition>().firstOrNull() ?: return null
+      element = SolResolver.resolveMemberAccess(element).filterIsInstance<SolFunctionDefinition>().firstOrNull()
+        ?: return null
     }
 
     val builder = StringBuilder()
+
     if (!builder.appendDefinition(element)) return null
+
+    if (element is SolFunctionDefinition) {
+      builder.appendSign(element)
+    }
+
     data class DocWrapper(val document: Document?)
 
     val doc = mutableMapOf<PsiFile, DocWrapper>()
@@ -113,22 +120,26 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
         text = text.replace(commentsRegex, "")
 
         text = when (e.elementType) {
-            SolidityTokenTypes.NAT_SPEC_TAG -> {
-              if (e.text == NO_VALIDATION_TAG) "" else "$GRAYED_START${text.substring(1)}:$GRAYED_END"
+          SolidityTokenTypes.NAT_SPEC_TAG -> {
+            if (e.text == NO_VALIDATION_TAG) "" else "$GRAYED_START${text.substring(1)}:$GRAYED_END"
+          }
+
+          SolidityTokenTypes.COMMENT -> {
+            // replacing internal '*' characters which start a line
+            val split = text.split("*").filter { it.isNotEmpty() }
+            split.foldIndexed("") { i, a, t ->
+              if (i == 0) a + t else {
+                a.trimEnd(' ') + (if (split[i - 1].lastOrNull { it == '\n' || !it.isWhitespace() } == '\n') "" else "*") + t
+              }
             }
-            SolidityTokenTypes.COMMENT -> {
-              // replacing internal '*' characters which start a line
-              val split = text.split("*").filter { it.isNotEmpty() }
-              split.foldIndexed("") {i, a, t -> if (i == 0) a + t else {
-                  a.trimEnd(' ') + (if (split[i - 1].lastOrNull { it == '\n' || !it.isWhitespace() } == '\n') "" else "*") + t
-                } }
-            }
-            else -> text
+          }
+
+          else -> text
         }
 
         text = text.split("\n").filter { it.contains("[^/]".toRegex()) }.joinToString("\n")
 
-        getDoc(e.containingFile)?.let {doc ->
+        getDoc(e.containingFile)?.let { doc ->
           if (i > 0 && (i > 1 || prevText.isNotBlank()) && doc.getLineNumber(e.textOffset) != doc.getLineNumber(comments[i - 1].endOffset)) {
             text = "\n" + text
           } else text
@@ -148,7 +159,7 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
       builder.append(CONTENT_END)
     }
 
-    println(builder.toString())
+
     return builder.toString()
   }
 
@@ -158,12 +169,12 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
       ?: element.parentOfType<SolStateVariableDeclaration>(false)?.let { SolPsiFactory(element.project).createFunction("function ${element.name}() {}") }
       ?: return emptyList()
 
-    fun findTargetElement(base: SolFunctionDefinition) =  (when (element) {
-          is SolFunctionDefinition -> base.comments()
-          is SolParameterDef -> base.parameters.find { it.identifier?.text == element.identifier?.text }?.let { collectParameterComments(it) }
-          is SolStateVariableDeclaration -> base.comments()
-          else -> null
-        }) ?: emptyList()
+    fun findTargetElement(base: SolFunctionDefinition) = (when (element) {
+      is SolFunctionDefinition -> base.comments()
+      is SolParameterDef -> base.parameters.find { it.identifier?.text == element.identifier?.text }?.let { collectParameterComments(it) }
+      is SolStateVariableDeclaration -> base.comments()
+      else -> null
+    }) ?: emptyList()
 
     element.comments().find { it.elementType == SolidityTokenTypes.NAT_SPEC_TAG && it.text == "@inheritdoc" }?.let {
       it.siblings().firstOrNull { it.elementType == SolidityTokenTypes.COMMENT }?.let {
@@ -189,13 +200,14 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     val singleReturn = returnParam && natIndexes.count { it.value.text == "@return" } == 1
     val paramName = element.identifier?.text ?: if (!singleReturn) return emptyList() else ""
 
-    val natParam = natIndexes.find { it.value.text == natName && (singleReturn || comments.getOrNull(it.index - 1)?.text?.trimStart()?.startsWith(paramName) ?: false) } ?: return emptyList()
+    val natParam = natIndexes.find { it.value.text == natName && (singleReturn || comments.getOrNull(it.index - 1)?.text?.trimStart()?.startsWith(paramName) ?: false) }
+      ?: return emptyList()
     val nextNatParam = natIndexes.getOrNull(natIndexes.indexOf(natParam) - 1)?.index?.let { it + 1 } ?: 0
     val paramComments = comments.slice(nextNatParam..natParam.index)
     return paramComments
   }
 
-  private fun StringBuilder.appendDefinition(element: PsiElement) : Boolean {
+  private fun StringBuilder.appendDefinition(element: PsiElement): Boolean {
     return calcDefinition(element)?.let {
       append(DEFINITION_START)
       append(it.colorizeKeywords())
@@ -204,10 +216,11 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     } ?: false
   }
 
+
   private fun calcDefinition(element: PsiElement): String? {
     return when (element) {
       is SolContractDefinition -> element.doc()
-      is SolStructDefinition ->  "struct " + element.identifier.idName()
+      is SolStructDefinition -> "struct " + element.identifier.idName()
       is SolFunctionDefinition -> element.doc()
       is SolParameterDef -> element.colorizedTypeText()
       is SolVariableDeclaration -> element.colorizedTypeText()
@@ -226,43 +239,73 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
   private fun PsiElement?.idName() = this?.text ?: "<no_name>"
 
   private val colorizedTypes = SolHighlighter.types() + SolidityTokenTypes.CONTRACT_DEFINITION + SolidityTokenTypes.STRUCT
-  private fun PsiElement.colorizedTypeText() = descendantsOfType<LeafPsiElement>().joinToString("") { el -> el.text.let { if (el.elementType in colorizedTypes || el.parent.elementType == SolidityTokenTypes.USER_DEFINED_TYPE_NAME) it.colorizeKeyword() else it } }
-
-  private fun List<PsiElement>?.doc(separator: String = ", ", prefix: String = "", postfix : String = ""): String {
-    return takeIf { it?.isNotEmpty() ?: false }
-      ?.joinToString(separator, prefix, postfix) { e -> e.colorizedTypeText() } ?: ""
+  private fun PsiElement.colorizedTypeText() = descendantsOfType<LeafPsiElement>().joinToString("") { el ->
+    el.text.let {
+      if (el.elementType in colorizedTypes || el.parent.elementType == SolidityTokenTypes.USER_DEFINED_TYPE_NAME) it.colorizeKeyword() else it
+    }
   }
 
-  private fun SolContractDefinition.doc() : String {
-    return "${contractType.docName} ${identifier.idName()}" +
-      inheritanceSpecifierList.doc(prefix = " is ")
+  private fun List<PsiElement>?.doc(separator: String = ", ", prefix: String = "", postfix: String = ""): String {
+    return takeIf { it?.isNotEmpty() ?: false }?.joinToString(separator, prefix, postfix) { e -> e.colorizedTypeText() }
+      ?: ""
   }
 
-  private fun SolFunctionDefinition.doc() : String {
-    return ("${if (isConstructor) "constructor" else "function"} ${identifier.idName()}(${parameters.doc()}) ${functionVisibilitySpecifierList.doc(" ")} " +
-      "${stateMutabilityList.doc(" ")} ${modifierInvocationList.doc(" ")} " +
-      (returns?.parameterDefList?.doc(", ", "returns (", ")") ?: "")).replace("  ", " ")
+  private fun SolContractDefinition.doc(): String {
+    return "${contractType.docName} ${identifier.idName()}" + inheritanceSpecifierList.doc(prefix = " is ")
   }
 
-  private fun SolUserDefinedValueTypeDefinition.doc() : String {
+  private fun SolFunctionDefinition.doc(): String {
+    return ("${if (isConstructor) "constructor" else "function"} ${identifier.idName()}(${parameters.doc()}) ${functionVisibilitySpecifierList.doc(" ")} " + "${stateMutabilityList.doc(" ")} ${modifierInvocationList.doc(" ")} " + (returns?.parameterDefList?.doc(", ", "returns (", ")")
+      ?: "")).replace("  ", " ")
+  }
+
+  private fun SolUserDefinedValueTypeDefinition.doc(): String {
     return "type ${identifier.idName()} is ${elementaryTypeName?.text}"
   }
 
-  private fun SolEnumDefinition.doc() : String {
+  private fun SolEnumDefinition.doc(): String {
     return "enum ${identifier.idName()} { ${enumValueList.doc()} }"
   }
 
-  private fun SolEventDefinition.doc() : String {
+  private fun SolEventDefinition.doc(): String {
     return "event ${identifier.idName()} ${children.joinToString { it.text.colorizeKeywords() }}"
   }
 
-  private fun SolErrorDefinition.doc() : String {
+  private fun SolErrorDefinition.doc(): String {
     return "error ${(this as? SolErrorDefMixin)?.nameIdentifier?.idName() ?: "N/A"} ${children.joinToString { it.text.colorizeKeywords() }}"
   }
 
-  private fun SolModifierDefinition.doc() : String {
-    return "modifier ${identifier.idName()}(${parameterList?.parameterDefList?.doc() ?: ""}) " +
-      "${virtualSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""} ${overrideSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""}"
+  private fun SolModifierDefinition.doc(): String {
+    return "modifier ${identifier.idName()}(${parameterList?.parameterDefList?.doc() ?: ""}) " + "${virtualSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""} ${overrideSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""}"
+  }
+
+  private fun String.sign(): String {
+    return "$this ${Hash.sha3String(this).substring(0, 10)}"
+  }
+
+  private fun StringBuilder.appendSign(element: PsiElement): Boolean {
+    return calcSignText(element)?.let {
+      append(DEFINITION_START)
+      append(it.sign())
+      append(DEFINITION_END)
+      true
+    } ?: false
+  }
+
+  private fun calcSignText(element: PsiElement): String? {
+    // 计算签名方式
+    if (element is SolFunctionDefinition) {
+      return element.sign()
+    }
+    return null
+  }
+
+  private fun List<SolParameterDef>?.sign(separator: String = ",", prefix: String = "", postfix: String = ""): String {
+    return takeIf { it?.isNotEmpty() ?: false }?.joinToString(separator, prefix, postfix) { e ->  getSolType(e.typeName).signText() } ?: ""
+  }
+
+  private fun SolFunctionDefinition.sign(): String {
+    return ("${identifier.idName()}(${parameters.sign()})")
   }
 }
 

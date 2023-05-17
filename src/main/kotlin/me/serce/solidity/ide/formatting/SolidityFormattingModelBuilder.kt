@@ -75,7 +75,7 @@ class SolidityFormattingModelBuilder : FormattingModelBuilder {
         .beforeInside(BLOCK, STATEMENT).spaces(1)
         .beforeInside(UNCHECKED_BLOCK, STATEMENT).spaces(1)
         .beforeInside(LBRACE, CONTRACT_DEFINITION).spaces(1)
-        // else on the same line as }
+
         .betweenInside(STATEMENT, ELSE, IF_STATEMENT).spaces(1)
         .between(STATEMENT, COMMENT).spaces(1)
         .after(STATEMENT).lineBreakInCode()
