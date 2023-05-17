@@ -26,7 +26,9 @@ enum class Mutability {
 }
 
 enum class ContractType(val docName: String) {
-  COMMON("contract"), LIBRARY("library"), INTERFACE("interface")
+  COMMON("contract"),
+  LIBRARY("library"),
+  INTERFACE("interface")
 }
 
 interface SolCallable {
@@ -57,6 +59,7 @@ interface SolFunctionDefElement : SolHasModifiersElement, SolMember, SolCallable
   val returns: SolParameterList?
   val isConstructor: Boolean
   val visibility: Visibility?
+  val isView: Boolean
 }
 
 inline fun <reified T : Enum<*>> safeValueOf(name: String): T? =

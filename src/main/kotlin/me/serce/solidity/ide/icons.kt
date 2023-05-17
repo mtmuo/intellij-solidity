@@ -12,7 +12,6 @@ object SolidityIcons {
 
   val FUNCTION: Icon = IconLoader.getIcon("/icons/sol-function.svg", SolidityIcons::class.java)
   val VIEW_FUNCTION: Icon = IconLoader.getIcon("/icons/sol-view-function.svg", SolidityIcons::class.java)
-  val ABSTRACT_FUNCTION: Icon = IconLoader.getIcon("/icons/sol-abstract_function.svg", SolidityIcons::class.java)
 
   val MODIFIER: Icon = IconLoader.getIcon("/icons/sol-modifier.svg", SolidityIcons::class.java)
   val ENUM: Icon = IconLoader.getIcon("/icons/sol-enum.svg", SolidityIcons::class.java)

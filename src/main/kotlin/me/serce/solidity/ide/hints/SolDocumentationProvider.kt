@@ -52,6 +52,7 @@ private fun collectBlockComments(nonSolElements: List<PsiElement>): List<PsiElem
 }
 
 class SolDocumentationProvider : AbstractDocumentationProvider() {
+
   override fun getQuickNavigateInfo(element: PsiElement?, originalElement: PsiElement?): String? {
     if (element == null) return null
     val builder = StringBuilder()
@@ -63,8 +64,12 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
   private val keywordColors = SolHighlighter.keywords().plus(SolHighlighter.types()).minus(SolidityTokenTypes.RETURN).map { it.toString() }
     .plus(setOf("u?int(\\d+)", "u?fixed(\\d+)", "bytes?(\\d+)", "error"))
     .joinToString("|", "\\b(", ")\\b").toRegex()
+
+
   private val col = SolColor.TYPE.textAttributesKey.defaultAttributes.foregroundColor
+
   private val typeRGB = "rgb(${col.red},${col.green},${col.blue})"
+
   private fun String.colorizeKeywords(): String {
     return this.replace(keywordColors) { it.value.colorizeKeyword() }
   }
@@ -74,15 +79,19 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
 
   override fun generateDoc(elementOrNull: PsiElement?, originalElement: PsiElement?): String? {
     var element = elementOrNull ?: return null
+
     if (element is SolMemberAccessExpression) {
       element = SolResolver.resolveMemberAccess(element).filterIsInstance<SolFunctionDefinition>().firstOrNull() ?: return null
     }
+
     val builder = StringBuilder()
     if (!builder.appendDefinition(element)) return null
     data class DocWrapper(val document: Document?)
+
     val doc = mutableMapOf<PsiFile, DocWrapper>()
 
     fun getDoc(file: PsiFile) = doc.getOrCreate(file) { DocWrapper(PsiDocumentManager.getInstance(element.project).getDocument(file)) }.document
+
     val comments = element.comments().let {
       it + if (it.isEmpty() || it.any { it.elementType == SolidityTokenTypes.NAT_SPEC_TAG && it.text == "@inheritdoc" }) {
         when (element) {
@@ -93,6 +102,8 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
         }
       } else emptyList()
     }.reversed()
+
+
     if (comments.isNotEmpty()) {
       builder.append(CONTENT_START)
       var prevText = ""
@@ -114,22 +125,30 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
             }
             else -> text
         }
+
         text = text.split("\n").filter { it.contains("[^/]".toRegex()) }.joinToString("\n")
+
         getDoc(e.containingFile)?.let {doc ->
           if (i > 0 && (i > 1 || prevText.isNotBlank()) && doc.getLineNumber(e.textOffset) != doc.getLineNumber(comments[i - 1].endOffset)) {
             text = "\n" + text
           } else text
         }
+
         prevText = text
         text
+
       }.joinToString("")
+
       val split = text.split("\n")
       text = split.filterIndexed { i, l -> !((i == 0 || i == split.size - 1) && l.isBlank()) }.joinToString("\n")
       text = text.replace(" ", "&nbsp;").replace("\n", "<br/>")
+
       builder.append(text);
+
       builder.append(CONTENT_END)
     }
 
+    println(builder.toString())
     return builder.toString()
   }
 
@@ -213,6 +232,7 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     return takeIf { it?.isNotEmpty() ?: false }
       ?.joinToString(separator, prefix, postfix) { e -> e.colorizedTypeText() } ?: ""
   }
+
   private fun SolContractDefinition.doc() : String {
     return "${contractType.docName} ${identifier.idName()}" +
       inheritanceSpecifierList.doc(prefix = " is ")
