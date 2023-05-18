@@ -11,6 +11,7 @@ object SolidityIcons {
   val INTERFACE: Icon = IconLoader.getIcon("/icons/sol-interface.svg", SolidityIcons::class.java)
 
   val FUNCTION: Icon = IconLoader.getIcon("/icons/sol-function.svg", SolidityIcons::class.java)
+  val CONSTRUCTOR_FUNCTION: Icon = IconLoader.getIcon("/icons/sol-constructor_function.svg", SolidityIcons::class.java)
   val VIEW_FUNCTION: Icon = IconLoader.getIcon("/icons/sol-view-function.svg", SolidityIcons::class.java)
 
   val MODIFIER: Icon = IconLoader.getIcon("/icons/sol-modifier.svg", SolidityIcons::class.java)

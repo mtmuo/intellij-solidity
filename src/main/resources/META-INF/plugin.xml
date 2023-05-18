@@ -181,11 +181,11 @@
                          level="WARNING"
                          implementationClass="me.serce.solidity.ide.inspections.ResolveNameInspection"/>
 
-        <localInspection language="Solidity" groupName="Solidity"
-                         displayName="No return statement"
-                         enabledByDefault="true"
-                         level="WARNING"
-                         implementationClass="me.serce.solidity.ide.inspections.NoReturnInspection"/>
+<!--        <localInspection language="Solidity" groupName="Solidity"-->
+<!--                         displayName="No return statement"-->
+<!--                         enabledByDefault="true"-->
+<!--                         level="WARNING"-->
+<!--                         implementationClass="me.serce.solidity.ide.inspections.NoReturnInspection"/>-->
 
         <localInspection language="Solidity" groupName="Solidity"
                          displayName="Linearization impossible"

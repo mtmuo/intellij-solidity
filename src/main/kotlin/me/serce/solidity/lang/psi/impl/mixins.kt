@@ -26,10 +26,11 @@ open class SolImportPathElement : SolStubbedNamedElementImpl<SolImportPathDefStu
 
   override val referenceNameElement: PsiElement
     get() = findChildByType(STRINGLITERAL)!!
+
   override val referenceName: String
     get() = referenceNameElement.text
 
-  override fun getReference() = SolImportPathReference(this)
+//  override fun getReference() = SolImportPathReference(this)
 }
 
 open class SolImportAliasMixin(node: ASTNode) : SolNamedElementImpl(node)
@@ -133,7 +134,7 @@ abstract class SolConstructorDefMixin(node: ASTNode) : SolElementImpl(node), Sol
 
   override fun getIcon(flags: Int): Icon? {
     val row = com.intellij.ui.RowIcon(2)
-    row.setIcon(SolidityIcons.FUNCTION, 0)
+    row.setIcon(SolidityIcons.CONSTRUCTOR_FUNCTION, 0)
     row.setIcon(SolidityIcons.PUBLIC, 1)
     return row
   }
@@ -467,6 +468,7 @@ abstract class SolUsingForMixin(node: ASTNode) : SolElementImpl(node), SolUsingF
         null
       }
     }
+
   override val library: SolContractDefinition?
     get() = SolResolver.resolveTypeNameUsingImports(getTypeNameList()[0] as SolUserDefinedTypeName).filterIsInstance<SolContractDefinition>().firstOrNull()
 }

@@ -110,9 +110,9 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
       } else emptyList()
     }.reversed()
 
+    builder.append(CONTENT_START)
 
     if (comments.isNotEmpty()) {
-      builder.append(CONTENT_START)
       var prevText = ""
       var text = comments.mapIndexed { i, e ->
         var text = e.text
@@ -149,16 +149,13 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
         text
 
       }.joinToString("")
-
       val split = text.split("\n")
       text = split.filterIndexed { i, l -> !((i == 0 || i == split.size - 1) && l.isBlank()) }.joinToString("\n")
       text = text.replace(" ", "&nbsp;").replace("\n", "<br/>")
-
       builder.append(text);
-
-      builder.append(CONTENT_END)
     }
 
+    builder.append(CONTENT_END)
 
     return builder.toString()
   }
@@ -279,14 +276,14 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     return "modifier ${identifier.idName()}(${parameterList?.parameterDefList?.doc() ?: ""}) " + "${virtualSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""} ${overrideSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""}"
   }
 
-  private fun String.sign(): String {
+  private fun String.calcSign(): String {
     return "$this ${Hash.sha3String(this).substring(0, 10)}"
   }
 
   private fun StringBuilder.appendSign(element: PsiElement): Boolean {
     return calcSignText(element)?.let {
       append(DEFINITION_START)
-      append(it.sign())
+      append(it.calcSign())
       append(DEFINITION_END)
       true
     } ?: false
@@ -301,12 +298,12 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
   }
 
   private fun List<SolParameterDef>?.sign(separator: String = ",", prefix: String = "", postfix: String = ""): String {
-    return takeIf { it?.isNotEmpty() ?: false }?.joinToString(separator, prefix, postfix) { e ->  getSolType(e.typeName).signText() } ?: ""
+    return takeIf {
+      it?.isNotEmpty() ?: false
+    }?.joinToString(separator, prefix, postfix) { e -> getSolType(e.typeName).signText() } ?: ""
   }
 
   private fun SolFunctionDefinition.sign(): String {
     return ("${identifier.idName()}(${parameters.sign()})")
   }
 }
-
-

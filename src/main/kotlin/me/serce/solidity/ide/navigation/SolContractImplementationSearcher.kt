@@ -15,7 +15,7 @@ import me.serce.solidity.lang.psi.SolContractDefinition
 import me.serce.solidity.lang.psi.SolInheritanceSpecifier
 import java.util.*
 
-private const val MAX_IMPLEMENTATIONS = 250
+private const val MAX_IMPLEMENTATIONS = 200
 
 class SolContractImplementationSearcher : QueryExecutorBase<PsiElement, SearchParameters>(true) {
 
@@ -27,6 +27,7 @@ class SolContractImplementationSearcher : QueryExecutorBase<PsiElement, SearchPa
     val implementations = contract.findAllImplementations()
     implementations.forEach { consumer.process(it) }
   }
+
 }
 
 fun SolContractDefinition.findAllImplementations(): HashSet<SolContractDefinition> {
@@ -54,6 +55,7 @@ private fun findAllImplementationsInAction(
   implQueue: ArrayDeque<SolContractDefinition>,
   implementations: HashSet<SolContractDefinition>
 ) {
+
   while (implQueue.isNotEmpty() && implQueue.size < MAX_IMPLEMENTATIONS && implementations.size < MAX_IMPLEMENTATIONS) {
     val current = implQueue.poll()
     if (!implementations.add(current)) {
@@ -64,6 +66,7 @@ private fun findAllImplementationsInAction(
       .forEach(Processor { implQueue.add(it) })
   }
 }
+
 
 fun SolContractDefinition.findImplementations(): Query<SolContractDefinition> {
   return ReferencesSearch.search(this, this.useScope)

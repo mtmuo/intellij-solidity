@@ -111,6 +111,7 @@ object SolResolver {
 
   private fun resolveContract(element: PsiElement): Set<SolContractDefinition> =
     resolveUsingImports(SolContractDefinition::class.java, element, element.containingFile, true)
+
   private fun resolveEnum(element: PsiElement): Set<SolNamedElement> =
     resolveInnerType<SolEnumDefinition>(element) { it.enumDefinitionList } + resolveUsingImports(SolEnumDefinition::class.java, element, element.containingFile, true)
 

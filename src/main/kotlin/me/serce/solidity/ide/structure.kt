@@ -77,7 +77,7 @@ class LibraryFilter : Filter {
   }
 
   override fun getPresentation(): ActionPresentation {
-    return ActionPresentationData("显示支持库", "", SolidityIcons.LIBRARY)
+    return ActionPresentationData("库", "", SolidityIcons.LIBRARY)
   }
 
   override fun getName(): String {
@@ -95,7 +95,7 @@ class ViewFilter : Filter {
   }
 
   override fun getPresentation(): ActionPresentation {
-    return ActionPresentationData("VIEW方法", "", SolidityIcons.VIEW_FUNCTION)
+    return ActionPresentationData("视图", "", SolidityIcons.VIEW_FUNCTION)
   }
 
   override fun getName(): String {
@@ -165,9 +165,9 @@ class SolContractTreeElement(item: SolContractDefinition) : SortableTreeElement,
 
   override fun getChildrenBase(): Collection<StructureViewTreeElement> = element?.let {
     listOf(
-      it.stateVariableDeclarationList.map(::SolLeafTreeElement),
-      it.enumDefinitionList.map(::SolLeafTreeElement),
       it.structDefinitionList.map(::SolLeafTreeElement),
+      it.enumDefinitionList.map(::SolLeafTreeElement),
+      it.stateVariableDeclarationList.map(::SolLeafTreeElement),
       it.constructorDefinitionList.map(::SolLeafTreeElement),
       it.modifierDefinitionList.map(::SolLeafTreeElement),
       it.functionDefinitionList.map(::SolLeafTreeElement),
@@ -179,9 +179,10 @@ class SolLeafTreeElement(item: SolNamedElement) : SortableTreeElement, PsiTreeEl
 
   override fun getPresentableText(): String? {
     if (element is SolFunctionDefinition && (element as SolFunctionDefinition).modifiers.isNotEmpty()) {
-      return (element as SolFunctionDefinition).name + "@" + (element as SolFunctionDefinition).modifiers.map{ it.referenceName }.toString()
+      return (element as SolFunctionDefinition).name + "@" + (element as SolFunctionDefinition).modifiers.map { it.referenceName }.toString()
     }
-    return element?.name
+
+    return element?.name ?: element?.firstChild?.text
   }
 
   override fun getChildrenBase(): Collection<StructureViewTreeElement> = emptyList()
