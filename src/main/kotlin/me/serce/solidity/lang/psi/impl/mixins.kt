@@ -141,7 +141,7 @@ abstract class SolConstructorDefMixin(node: ASTNode) : SolElementImpl(node), Sol
     return contract?.let { SolContract( it ) } ?: SolUnknown
   }
 
-  override val visibility
+   override val visibility
     get() = functionVisibilitySpecifierList
       .map { it.text.uppercase() }
       .mapNotNull { safeValueOf<Visibility>(it) }
@@ -169,8 +169,7 @@ abstract class SolConstructorDefMixin(node: ASTNode) : SolElementImpl(node), Sol
     throw OperationNotSupportedException("constructors don't have name")
   }
 
-  val visibility
-    get() = functionVisibilitySpecifierList.map { it.text.uppercase() }.mapNotNull { safeValueOf<Visibility>(it) }.firstOrNull()
+
 
   override fun getIcon(flags: Int): Icon? {
     return if (visibility == Visibility.PRIVATE || visibility == Visibility.INTERNAL)
@@ -251,7 +250,7 @@ abstract class SolFunctionDefMixin : SolStubbedNamedElementImpl<SolFunctionDefSt
 
   override fun getReference() = references.firstOrNull()
 
-  override val isView: Boolean
+   val isView: Boolean
     get() = stateMutabilityList.any { it.text == "view" || it.text == "pure" }
 
   private val isFallBack: Boolean

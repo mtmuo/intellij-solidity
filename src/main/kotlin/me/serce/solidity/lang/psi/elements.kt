@@ -59,7 +59,6 @@ interface SolFunctionDefElement : SolHasModifiersElement, SolMember, SolCallable
   val returns: SolParameterList?
   val isConstructor: Boolean
   val visibility: Visibility?
-  val isView: Boolean
 }
 
 inline fun <reified T : Enum<*>> safeValueOf(name: String): T? =
