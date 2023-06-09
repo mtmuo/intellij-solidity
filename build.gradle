@@ -90,6 +90,7 @@ dependencies {
     implementation ('org.web3j:crypto:4.10.0')
 
     testImplementation group: 'junit', name: 'junit', version: '4.11'
+    implementation "org.jetbrains.kotlin:kotlin-script-runtime:1.8.10"
 }
 
 release {

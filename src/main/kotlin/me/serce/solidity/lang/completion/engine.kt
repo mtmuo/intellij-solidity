@@ -107,7 +107,7 @@ object SolCompleter {
           }
           Usage.VARIABLE -> it.getName()?.let { name ->
             PrioritizedLookupElement.withPriority(
-              LookupElementBuilder.create(name).withIcon(SolidityIcons.STATE_VAR),
+              LookupElementBuilder.create(name).withIcon(SolidityIcons.VARIABLE),
               TYPED_COMPLETION_PRIORITY
             )
           }

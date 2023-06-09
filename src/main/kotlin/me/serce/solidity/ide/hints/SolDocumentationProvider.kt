@@ -89,7 +89,7 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
 
     if (!builder.appendDefinition(element)) return null
 
-    if (element is SolFunctionDefinition) {
+    if (element is SolFunctionDefinition && element.name != "") {
       builder.appendSign(element)
     }
 

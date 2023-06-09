@@ -119,7 +119,7 @@ fun SolStructDefinition.toStructLookup(): LookupElementBuilder? {
 
 fun SolNamedElement.toVarLookup(): LookupElementBuilder? {
   return name?.let {
-    LookupElementBuilder.create(this).withIcon(SolidityIcons.STATE_VAR)
+    LookupElementBuilder.create(this).withIcon(SolidityIcons.VARIABLE)
   }
 }
 

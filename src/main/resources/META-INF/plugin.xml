@@ -181,11 +181,11 @@
                          level="WARNING"
                          implementationClass="me.serce.solidity.ide.inspections.ResolveNameInspection"/>
 
-<!--        <localInspection language="Solidity" groupName="Solidity"-->
-<!--                         displayName="No return statement"-->
-<!--                         enabledByDefault="true"-->
-<!--                         level="WARNING"-->
-<!--                         implementationClass="me.serce.solidity.ide.inspections.NoReturnInspection"/>-->
+        <!--        <localInspection language="Solidity" groupName="Solidity"-->
+        <!--                         displayName="No return statement"-->
+        <!--                         enabledByDefault="true"-->
+        <!--                         level="WARNING"-->
+        <!--                         implementationClass="me.serce.solidity.ide.inspections.NoReturnInspection"/>-->
 
         <localInspection language="Solidity" groupName="Solidity"
                          displayName="Linearization impossible"
@@ -193,11 +193,12 @@
                          level="WARNING"
                          implementationClass="me.serce.solidity.ide.inspections.LinearizationImpossibleInspection"/>
 
-        <localInspection language="Solidity" groupName="Solidity"
-                         displayName="Function call arguments are not matched with the parameters of function definition"
-                         enabledByDefault="true"
-                         level="ERROR"
-                         implementationClass="me.serce.solidity.ide.inspections.ValidateFunctionArgumentsInspection"/>
+        <!--        <localInspection language="Solidity"-->
+        <!--                         groupName="Solidity"-->
+        <!--                         displayName="Function call arguments are not matched with the parameters of function definition"-->
+        <!--                         enabledByDefault="true"-->
+        <!--                         level="ERROR"-->
+        <!--                         implementationClass="me.serce.solidity.ide.inspections.ValidateFunctionArgumentsInspection"/>-->
 
         <localInspection language="Solidity" groupName="Solidity"
                          displayName="Visibility modifier not specified for a function or state variable"
@@ -205,7 +206,7 @@
                          level="WEAK WARNING"
                          implementationClass="me.serce.solidity.ide.inspections.VisibilityModifierInspection"/>
 
-        <errorHandler implementation="me.serce.solidity.ide.SentryReportSubmitter"/>
+        <!--        <errorHandler implementation="me.serce.solidity.ide.SentryReportSubmitter"/>-->
 
         <defaultLiveTemplates file="/liveTemplates/Solidity.xml"/>
         <liveTemplateContext
@@ -218,6 +219,8 @@
                 text="Smart Contract" description="Create new solidity contract">
             <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewDir"/>
         </action>
+
+
     </actions>
 
 </idea-plugin>

@@ -29,7 +29,6 @@ class PublicFilter : Filter {
   override fun getName(): String {
     return "PublicFilter"
   }
-
   override fun isReverted(): Boolean {
     return true
   }
@@ -41,7 +40,7 @@ class StateFilter : Filter {
   }
 
   override fun getPresentation(): ActionPresentation {
-    return ActionPresentationData("变量", "", SolidityIcons.STATE_VAR)
+    return ActionPresentationData("变量", "", SolidityIcons.VARIABLE)
   }
 
   override fun getName(): String {
@@ -95,7 +94,7 @@ class ViewFilter : Filter {
   }
 
   override fun getPresentation(): ActionPresentation {
-    return ActionPresentationData("视图", "", SolidityIcons.VIEW_FUNCTION)
+    return ActionPresentationData("视图", "", SolidityIcons.FUNCTION_VIEW)
   }
 
   override fun getName(): String {

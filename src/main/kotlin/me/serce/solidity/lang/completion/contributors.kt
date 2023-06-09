@@ -78,7 +78,7 @@ class SolContextCompletionContributor : CompletionContributor(), DumbAware {
           val needComma = parameters.originalPosition?.elementType != SolidityTokenTypes.RBRACE
           val elements = (descriptions.flatMap { it.arguments.map { it.split(" ").last() }.toList() }.toSet() - defined)
             .map {
-              LookupElementBuilder.create(it).withIcon(SolidityIcons.STATE_VAR).withInsertHandler { context, item ->
+              LookupElementBuilder.create(it).withIcon(SolidityIcons.VARIABLE).withInsertHandler { context, item ->
                 val originalPosition = parameters.originalPosition
                 val parent = originalPosition?.parent
                 if (parent !is SolMapExpressionClause) {

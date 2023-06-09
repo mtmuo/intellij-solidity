@@ -55,7 +55,6 @@ private fun findAllImplementationsInAction(
   implQueue: ArrayDeque<SolContractDefinition>,
   implementations: HashSet<SolContractDefinition>
 ) {
-
   while (implQueue.isNotEmpty() && implQueue.size < MAX_IMPLEMENTATIONS && implementations.size < MAX_IMPLEMENTATIONS) {
     val current = implQueue.poll()
     if (!implementations.add(current)) {

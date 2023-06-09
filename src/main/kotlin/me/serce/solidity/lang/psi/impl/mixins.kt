@@ -1,5 +1,6 @@
 package me.serce.solidity.lang.psi.impl
 
+import com.intellij.icons.AllIcons
 import com.intellij.lang.ASTNode
 import com.intellij.openapi.util.RecursionManager
 import com.intellij.psi.PsiElement
@@ -128,15 +129,14 @@ abstract class SolConstructorDefMixin(node: ASTNode) : SolElementImpl(node), Sol
     throw OperationNotSupportedException("constructors don't have name")
   }
 
-  override fun getName(): String {
-    return "constructor"
-  }
+  val visibility
+    get() = functionVisibilitySpecifierList.map { it.text.uppercase() }.mapNotNull { safeValueOf<Visibility>(it) }.firstOrNull()
 
   override fun getIcon(flags: Int): Icon? {
-    val row = com.intellij.ui.RowIcon(2)
-    row.setIcon(SolidityIcons.CONSTRUCTOR_FUNCTION, 0)
-    row.setIcon(SolidityIcons.PUBLIC, 1)
-    return row
+    return if (visibility == Visibility.PRIVATE || visibility == Visibility.INTERNAL)
+      SolidityIcons.FUNCTION_CONSTRUCTOR_PRIVATE
+    else
+      SolidityIcons.FUNCTION_CONSTRUCTOR_PUBLIC
   }
 
   override fun getReference(): SolReference? = references.firstOrNull()
@@ -214,19 +214,35 @@ abstract class SolFunctionDefMixin : SolStubbedNamedElementImpl<SolFunctionDefSt
   override val isView: Boolean
     get() = stateMutabilityList.any { it.text == "view" || it.text == "pure" }
 
+  private val isFallBack: Boolean
+    get() = this.firstChild.text == "fallback"
+  private val isReceive: Boolean
+    get() = this.firstChild.text == "receive"
+
   override fun getReferences(): Array<SolReference> {
     return modifiers.map { SolModifierReference(this, it) }.toTypedArray()
   }
 
   override fun getIcon(flags: Int): Icon? {
-    val row = com.intellij.ui.RowIcon(2)
-    row.setIcon(if (isView) SolidityIcons.VIEW_FUNCTION
-    else SolidityIcons.FUNCTION, 0)
-
-    row.setIcon(if (visibility == Visibility.EXTERNAL || visibility == Visibility.PUBLIC) SolidityIcons.PUBLIC
-    else SolidityIcons.PRIVATE, 1)
-
-    return row
+    return if (isConstructor) {
+      return SolidityIcons.FUNCTION_CONSTRUCTOR_PUBLIC
+    } else if (isFallBack) {
+      return SolidityIcons.FUNCTION_FALLBACK_PUBLIC
+    } else if (isReceive) {
+      return SolidityIcons.FUNCTION_PAYABLE_PUBLIC
+    } else if (visibility == Visibility.EXTERNAL || visibility == Visibility.PUBLIC) {
+      if (isView)
+        SolidityIcons.FUNCTION_VIEW_PUBLIC
+      else {
+        SolidityIcons.FUNCTION_PUBLIC
+      }
+    } else {
+      if (isView)
+        SolidityIcons.FUNCTION_VIEW_PRIVATE
+      else {
+        SolidityIcons.FUNCTION_PRIVATE
+      }
+    }
   }
 }
 
@@ -237,7 +253,7 @@ abstract class SolModifierDefMixin : SolStubbedNamedElementImpl<SolModifierDefSt
   constructor(node: ASTNode) : super(node)
   constructor(stub: SolModifierDefStub, nodeType: IStubElementType<*, *>) : super(stub, nodeType)
 
-  override fun getIcon(flags: Int) = SolidityIcons.FUNCTION
+  override fun getIcon(flags: Int) = SolidityIcons.MODIFIER
 }
 
 abstract class SolStateVarDeclMixin : SolStubbedNamedElementImpl<SolStateVarDeclStub>, SolStateVariableDeclaration {
@@ -266,14 +282,12 @@ abstract class SolStateVarDeclMixin : SolStubbedNamedElementImpl<SolStateVarDecl
 
   override val mutability: Mutability?
     get() = mutationModifier?.text?.let { safeValueOf(it.uppercase()) }
-//  override fun getIcon(flags: Int) = SolidityIcons.STATE_VAR
 
   override fun getIcon(flags: Int): Icon? {
-    val row = com.intellij.ui.RowIcon(2)
-    row.setIcon(SolidityIcons.STATE_VAR, 0)
-    row.setIcon(if (visibility == Visibility.EXTERNAL || visibility == Visibility.PUBLIC) SolidityIcons.PUBLIC
-    else SolidityIcons.PRIVATE, 1)
-    return row
+    return if (visibility == Visibility.EXTERNAL || visibility == Visibility.PUBLIC)
+      SolidityIcons.VARIABLE_PUBLIC
+    else
+      SolidityIcons.VARIABLE_PRIVATE
   }
 }
 
@@ -281,8 +295,9 @@ abstract class SolConstantVariableDeclMixin : SolStubbedNamedElementImpl<SolCons
   constructor(node: ASTNode) : super(node)
   constructor(stub: SolConstantVariableDeclStub, nodeType: IStubElementType<*, *>) : super(stub, nodeType)
 
-  // TODO: does it need a separate icon?
-  override fun getIcon(flags: Int) = SolidityIcons.STATE_VAR
+  override fun getIcon(flags: Int): Icon? {
+    return SolidityIcons.VARIABLE_READ_ONLY_PUBLIC
+  }
 }
 
 abstract class SolStructDefMixin : SolStubbedNamedElementImpl<SolStructDefStub>, SolStructDefinition, SolCallableElement {
@@ -293,8 +308,6 @@ abstract class SolStructDefMixin : SolStubbedNamedElementImpl<SolStructDefStub>,
 
   override fun parseParameters(): List<Pair<String?, SolType>> {
     return variableDeclarationList.map { it.identifier?.text to getSolType(it.typeName) }
-
-
   }
 
   override fun parseType(): SolType {
@@ -349,7 +362,7 @@ abstract class SolModifierInvocationMixin(node: ASTNode) : SolNamedElementImpl(n
   override fun getReference(): SolReference = SolModifierReference(this, this)
 
   override fun getIcon(flags: Int): Icon? {
-    return SolidityIcons.MODIFIER
+    return AllIcons.Nodes.Annotationtype
   }
 }
 
@@ -456,7 +469,6 @@ abstract class SolErrorDefMixin : SolStubbedNamedElementImpl<SolErrorDefStub>, S
 
   override val callablePriority = 1000
 }
-
 
 abstract class SolUsingForMixin(node: ASTNode) : SolElementImpl(node), SolUsingForElement {
   override val type: SolType?
