@@ -197,14 +197,13 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     val singleReturn = returnParam && natIndexes.count { it.value.text == "@return" } == 1
     val paramName = element.identifier?.text ?: if (!singleReturn) return emptyList() else ""
 
-    val natParam = natIndexes.find { it.value.text == natName && (singleReturn || comments.getOrNull(it.index - 1)?.text?.trimStart()?.startsWith(paramName) ?: false) }
-      ?: return emptyList()
+    val natParam = natIndexes.find { it.value.text == natName && (singleReturn || comments.getOrNull(it.index - 1)?.text?.trimStart()?.startsWith(paramName) ?: false) } ?: return emptyList()
     val nextNatParam = natIndexes.getOrNull(natIndexes.indexOf(natParam) - 1)?.index?.let { it + 1 } ?: 0
     val paramComments = comments.slice(nextNatParam..natParam.index)
     return paramComments
   }
 
-  private fun StringBuilder.appendDefinition(element: PsiElement): Boolean {
+  private fun StringBuilder.appendDefinition(element: PsiElement) : Boolean {
     return calcDefinition(element)?.let {
       append(DEFINITION_START)
       append(it.colorizeKeywords())
@@ -213,11 +212,10 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
     } ?: false
   }
 
-
   private fun calcDefinition(element: PsiElement): String? {
     return when (element) {
       is SolContractDefinition -> element.doc()
-      is SolStructDefinition -> "struct " + element.identifier.idName()
+      is SolStructDefinition ->  "struct " + element.identifier.idName()
       is SolFunctionDefinition -> element.doc()
       is SolParameterDef -> element.colorizedTypeText()
       is SolVariableDeclaration -> element.colorizedTypeText()
@@ -236,74 +234,43 @@ class SolDocumentationProvider : AbstractDocumentationProvider() {
   private fun PsiElement?.idName() = this?.text ?: "<no_name>"
 
   private val colorizedTypes = SolHighlighter.types() + SolidityTokenTypes.CONTRACT_DEFINITION + SolidityTokenTypes.STRUCT
-  private fun PsiElement.colorizedTypeText() = descendantsOfType<LeafPsiElement>().joinToString("") { el ->
-    el.text.let {
-      if (el.elementType in colorizedTypes || el.parent.elementType == SolidityTokenTypes.USER_DEFINED_TYPE_NAME) it.colorizeKeyword() else it
-    }
+  private fun PsiElement.colorizedTypeText() = descendantsOfType<LeafPsiElement>().joinToString("") { el -> el.text.let { if (el.elementType in colorizedTypes || el.parent.elementType == SolidityTokenTypes.USER_DEFINED_TYPE_NAME) it.colorizeKeyword() else it } }
+
+  private fun List<PsiElement>?.doc(separator: String = ", ", prefix: String = "", postfix : String = ""): String {
+    return takeIf { it?.isNotEmpty() ?: false }
+      ?.joinToString(separator, prefix, postfix) { e -> e.colorizedTypeText() } ?: ""
+  }
+  private fun SolContractDefinition.doc() : String {
+    return "${contractType.docName} ${identifier.idName()}" +
+      inheritanceSpecifierList.doc(prefix = " is ")
   }
 
-  private fun List<PsiElement>?.doc(separator: String = ", ", prefix: String = "", postfix: String = ""): String {
-    return takeIf { it?.isNotEmpty() ?: false }?.joinToString(separator, prefix, postfix) { e -> e.colorizedTypeText() }
-      ?: ""
+  private fun SolFunctionDefinition.doc() : String {
+    return ("${if (isConstructor) "constructor" else "function"} ${identifier.idName()}(${parameters.doc()}) ${functionVisibilitySpecifierList.doc(" ")} " +
+      "${stateMutabilityList.doc(" ")} ${modifierInvocationList.doc(" ")} " +
+      (returns?.parameterDefList?.doc(", ", "returns (", ")") ?: "")).replace("  ", " ")
   }
 
-  private fun SolContractDefinition.doc(): String {
-    return "${contractType.docName} ${identifier.idName()}" + inheritanceSpecifierList.doc(prefix = " is ")
-  }
-
-  private fun SolFunctionDefinition.doc(): String {
-    return ("${if (isConstructor) "constructor" else "function"} ${identifier.idName()}(${parameters.doc()}) ${functionVisibilitySpecifierList.doc(" ")} " + "${stateMutabilityList.doc(" ")} ${modifierInvocationList.doc(" ")} " + (returns?.parameterDefList?.doc(", ", "returns (", ")")
-      ?: "")).replace("  ", " ")
-  }
-
-  private fun SolUserDefinedValueTypeDefinition.doc(): String {
+  private fun SolUserDefinedValueTypeDefinition.doc() : String {
     return "type ${identifier.idName()} is ${elementaryTypeName?.text}"
   }
 
-  private fun SolEnumDefinition.doc(): String {
+  private fun SolEnumDefinition.doc() : String {
     return "enum ${identifier.idName()} { ${enumValueList.doc()} }"
   }
 
-  private fun SolEventDefinition.doc(): String {
+  private fun SolEventDefinition.doc() : String {
     return "event ${identifier.idName()} ${children.joinToString { it.text.colorizeKeywords() }}"
   }
 
-  private fun SolErrorDefinition.doc(): String {
+  private fun SolErrorDefinition.doc() : String {
     return "error ${(this as? SolErrorDefMixin)?.nameIdentifier?.idName() ?: "N/A"} ${children.joinToString { it.text.colorizeKeywords() }}"
   }
 
-  private fun SolModifierDefinition.doc(): String {
-    return "modifier ${identifier.idName()}(${parameterList?.parameterDefList?.doc() ?: ""}) " + "${virtualSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""} ${overrideSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""}"
-  }
-
-  private fun String.calcSign(): String {
-    return "$this ${Hash.sha3String(this).substring(0, 10)}"
-  }
-
-  private fun StringBuilder.appendSign(element: PsiElement): Boolean {
-    return calcSignText(element)?.let {
-      append(DEFINITION_START)
-      append(it.calcSign())
-      append(DEFINITION_END)
-      true
-    } ?: false
-  }
-
-  private fun calcSignText(element: PsiElement): String? {
-    // 计算签名方式
-    if (element is SolFunctionDefinition) {
-      return element.sign()
-    }
-    return null
-  }
-
-  private fun List<SolParameterDef>?.sign(separator: String = ",", prefix: String = "", postfix: String = ""): String {
-    return takeIf {
-      it?.isNotEmpty() ?: false
-    }?.joinToString(separator, prefix, postfix) { e -> getSolType(e.typeName).signText() } ?: ""
-  }
-
-  private fun SolFunctionDefinition.sign(): String {
-    return ("${identifier.idName()}(${parameters.sign()})")
+  private fun SolModifierDefinition.doc() : String {
+    return "modifier ${identifier.idName()}(${parameterList?.parameterDefList?.doc() ?: ""}) " +
+      "${virtualSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""} ${overrideSpecifierList.takeIf { it.isNotEmpty() }?.doc() ?: ""}"
   }
 }
+
+
